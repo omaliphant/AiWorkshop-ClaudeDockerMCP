@@ -1,93 +1,145 @@
-# MCP Workshop Demo: Claude Desktop + Docker Browser Toolkit
+# MCP Workshop Demo: Claude Desktop + Playwright Browser Automation
 
-This guide shows how to set up a live demonstration of Model Context Protocol (MCP) using Claude Desktop connected to a Docker-based browser that you can view in real-time through your web browser.
+This guide shows how to set up a live demonstration of Model Context Protocol (MCP) using Claude Desktop connected to Microsoft's Playwright MCP server for browser automation that you can view in real-time.
 
 ## Prerequisites
 
-- Docker Desktop installed and running
-- Claude Desktop app installed  
-- Web browser for viewing the demo
+- **Node.js** (version 18 or higher) - Download from [nodejs.org](https://nodejs.org/)
+- **Claude Desktop** app installed and logged in
+- **Web browser** for viewing the demo
+- **Stable internet connection** for downloading packages
 - Basic familiarity with terminal/command line
+
+## What You'll Build
+
+By the end of this demo, you'll have:
+- Claude Desktop connected to Playwright MCP server
+- Real browser automation capabilities for Claude
+- Visual demo setup using NoVNC (optional)
+- Live demonstration of AI-powered web interactions
 
 ## Quick Setup
 
-### Step 1: Run the MCP Browser Container
+### Step 1: Verify Node.js Installation
 
 ```bash
-# Pull and run the browser container with NoVNC web interface
-docker run -d \
-  --name mcp-browser-demo \
-  -p 6080:6080 \
-  -p 8080:8080 \
-  -e VNC_PASSWORD=demo123 \
-  dorowu/ubuntu-desktop-lxde-vnc
+# Check if Node.js is installed (should be v18 or higher)
+node --version
+npm --version
+
+# If not installed, download from https://nodejs.org/
 ```
 
-### Step 2: Verify Container is Running
-
-```bash
-# Check if container is running
-docker ps
-
-# Should show mcp-browser-demo container with ports 6080 and 8080
-```
-
-### Step 3: Access Browser View
-
-Open your web browser and navigate to:
-```
-http://localhost:6080/vnc.html
-```
-
-- **Password:** `demo123`
-- You should see a desktop environment with a web browser
-- This is what Claude will be controlling during the demo
-
-### Step 4: Configure Claude Desktop
+### Step 2: Configure Claude Desktop with Playwright MCP
 
 1. Open Claude Desktop
-2. Click the gear icon (Settings)
-3. Navigate to "Developer" or "MCP Servers" section
-4. Add the following configuration:
+2. Go to **Settings** → **Developer**
+3. Click **"Edit Config"** to open `claude_desktop_config.json`
+4. Add the Playwright MCP server configuration:
 
 ```json
 {
   "mcpServers": {
-    "browser": {
-      "command": "docker",
-      "args": ["exec", "-i", "mcp-browser-demo", "mcp-server"],
-      "env": {
-        "DISPLAY": ":1"
-      }
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"]
     }
   }
 }
 ```
 
-### Step 5: Restart Claude Desktop
+5. **Save the file** and **restart Claude Desktop**
 
-Close and reopen Claude Desktop to load the new MCP server configuration.
+### Step 3: Verify MCP Connection
+
+1. Open Claude Desktop after restart
+2. Go to **Settings** → **Developer**
+3. You should see the Playwright server listed as **"Connected"**
+4. Look for a 🔨 (hammer) icon in the chat input area - this indicates MCP tools are available
+
+### Step 4: Test Basic Browser Automation
+
+Send this test message to Claude:
+```
+"Can you open a web browser and navigate to example.com, then tell me what you see on the page?"
+```
+
+**Expected Result:** Claude should acknowledge it can use browser tools and provide information about the webpage content.
+
+## Optional: Visual Demo Enhancement
+
+For maximum visual impact during your workshop, you can add a visual browser component:
+
+### Option A: NoVNC Docker Container (Visual Demo)
+
+```bash
+# Run browser container for visual demonstration
+docker run -d \
+  --name visual-demo-browser \
+  -p 6080:6080 \
+  -e VNC_PASSWORD=demo123 \
+  dorowu/ubuntu-desktop-lxde-vnc
+
+# Access at: http://localhost:6080/vnc.html
+```
+
+**Demo Flow:**
+1. Claude uses Playwright MCP (headless) for actual automation
+2. Manually demonstrate similar actions in the visual browser for audience impact
+3. Explain that Playwright runs efficiently in the background while providing the same capabilities
+
+### Option B: Playwright with Headed Mode
+
+You can configure Playwright to run in headed mode for direct visual demonstration:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp", "--headless=false"]
+    }
+  }
+}
+```
+
+**Note:** Headed mode may require additional display setup depending on your operating system.
 
 ## Demo Script Ideas
 
-### Basic Navigation Test
+### Basic Navigation and Content Analysis
 ```
-"Can you open a web browser and navigate to wikipedia.org?"
-```
-
-### Search and Summarize
-```
-"Please go to wikipedia.org, search for 'Model Context Protocol', and summarize what you find"
+"Please navigate to wikipedia.org and tell me what you see on the homepage"
 ```
 
-### Multi-step Workflow
+### Search and Data Extraction
 ```
-"Navigate to github.com, search for 'MCP servers', and tell me about the most popular repository"
+"Go to wikipedia.org, search for 'Model Context Protocol', and summarize the key points from the article"
 ```
 
 ### Form Interaction
 ```
-"Go to google.com, search for 'Anthropic Claude', and describe the top 3 search results"
+"Navigate to google.com and search for 'Anthropic Claude'. What are the top 3 search results about?"
+```
+
+### Multi-step Workflow
+```
+"Go to github.com, search for repositories about 'MCP servers', and tell me about the most popular one"
+```
+
+### Screenshot and Analysis
+```
+"Take a screenshot of the current page and describe what you see"
+```
+
+### Advanced Web Interaction
+```
+"Navigate to a news website, find the top story, and provide a brief summary of the headline and first paragraph"
+```
+
+### E-commerce Demonstration
+```
+"Go to an e-commerce site, search for a specific product, and tell me about the pricing and availability"
 ```
 
 ## Presentation Tips
@@ -100,58 +152,80 @@ Close and reopen Claude Desktop to load the new MCP server configuration.
 
 ## Troubleshooting
 
-### Container Won't Start
+### MCP Server Won't Connect
 ```bash
-# Check if ports are already in use
-netstat -an | grep 6080
-netstat -an | grep 8080
+# Check Node.js version (needs v18+)
+node --version
 
-# Stop and remove existing container if needed
-docker stop mcp-browser-demo
-docker rm mcp-browser-demo
+# Test Playwright MCP manually
+npx -y @playwright/mcp
+
+# Check Claude Desktop developer console for error messages
 ```
 
-### Can't Access Browser View
-- Ensure Docker container is running: `docker ps`
-- Try accessing `http://127.0.0.1:6080/vnc.html` instead
-- Check firewall settings for localhost connections
-- Verify port 6080 isn't blocked
-
-### Claude Can't Connect to MCP Server
+### Playwright Installation Issues
 ```bash
-# Check container logs
-docker logs mcp-browser-demo
+# Clear npm cache and reinstall
+npm cache clean --force
 
-# Restart Claude Desktop after configuration changes
-# Verify MCP server status in Claude Desktop settings (should show green/connected)
+# Install Playwright browsers manually
+npx playwright install
+
+# Check if Playwright can run
+npx playwright --version
 ```
 
-### Browser Inside Container is Slow
-```bash
-# Allocate more resources to Docker container
-docker stop mcp-browser-demo
-docker rm mcp-browser-demo
+### Claude Can't See Browser Tools
+- Ensure you've restarted Claude Desktop after configuration
+- Check that `claude_desktop_config.json` has valid JSON syntax
+- Look for the 🔨 hammer icon in Claude's input area
+- Verify MCP server shows "Connected" in Developer settings
 
-# Run with more memory and CPU
-docker run -d \
-  --name mcp-browser-demo \
-  -p 6080:6080 \
-  -p 8080:8080 \
-  -e VNC_PASSWORD=demo123 \
-  --memory=2g \
-  --cpus=2 \
-  dorowu/ubuntu-desktop-lxde-vnc
+### Performance Issues
+```bash
+# Run with less resource usage
+# Add to your configuration:
+"env": {
+  "PLAYWRIGHT_BROWSERS_PATH": "0",
+  "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1"
+}
 ```
+
+### Permission Errors (macOS/Linux)
+```bash
+# Fix npm permissions
+sudo chown -R $(whoami) ~/.npm
+sudo chown -R $(whoami) /usr/local/lib/node_modules
+```
+
+### Browser Crashes or Timeouts
+```bash
+# Increase timeout in configuration
+"env": {
+  "PLAYWRIGHT_TIMEOUT": "30000"
+}
+```
+
+### Common Error Messages
+
+| Error | Solution |
+|-------|----------|
+| "npx command not found" | Install Node.js from nodejs.org |
+| "MCP server disconnected" | Restart Claude Desktop |
+| "Browser launch failed" | Run `npx playwright install` |
+| "Invalid JSON config" | Check JSON syntax in config file |
+| "Permission denied" | Fix npm permissions (see above) |
 
 ## Cleanup After Demo
 
 ```bash
-# Stop and remove the container
-docker stop mcp-browser-demo
-docker rm mcp-browser-demo
+# Playwright MCP cleans up automatically
+# No manual cleanup needed for the MCP server
 
-# Remove the image if no longer needed
-docker rmi dorowu/ubuntu-desktop-lxde-vnv
+# If you used the optional visual demo container:
+docker stop visual-demo-browser
+docker rm visual-demo-browser
+docker rmi dorowu/ubuntu-desktop-lxde-vnc
 ```
 
 ## Workshop Follow-up
@@ -164,15 +238,19 @@ After the demo, participants can:
 
 ## Security Notes for Corporate Environments
 
-- This setup is for **demonstration purposes only**
-- Container has internet access - consider network restrictions for production
-- Use stronger passwords in real implementations
-- Consider using HTTPS for production deployments
-- Review your company's Docker and container policies
+- **Playwright MCP runs locally** - no external servers or cloud dependencies
+- **Browser data stays on your machine** - all automation happens locally
+- **Network access**: Playwright will access websites as configured
+- **Consider corporate firewalls** - ensure npm and browser access is allowed
+- **Review your company's Node.js and npm policies** before installation
+- **Headless by default** - no visible browser windows unless configured otherwise
 
 ## Additional Resources
 
+- [Microsoft Playwright MCP Documentation](https://github.com/microsoft/playwright-mcp)
 - [MCP Official Documentation](https://modelcontextprotocol.io)
 - [Anthropic MCP Repository](https://github.com/anthropics/mcp)
 - [Community MCP Servers](https://github.com/modelcontextprotocol/servers)
 - [Claude Desktop Configuration Guide](https://docs.claude.com)
+- [Playwright Official Documentation](https://playwright.dev)
+- [MCP Server Directory](https://www.pulsemcp.com)
