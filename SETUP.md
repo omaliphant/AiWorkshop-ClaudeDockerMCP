@@ -1,201 +1,292 @@
-# MCP Workshop Demo - Pre-Workshop Setup Guide
+# MCP Workshop Demo - Pre-Workshop Setup Guide (Playwright)
 
-This guide helps you prepare and test everything before your workshop to ensure a smooth demonstration.
+This guide helps you prepare and test Microsoft Playwright MCP server with Claude Desktop before your workshop to ensure a smooth demonstration.
 
 ## Pre-Workshop Checklist
 
 ### 1. Environment Requirements
 
 **System Requirements:**
-- [ ] Docker Desktop installed with at least 4GB RAM allocated
-- [ ] Claude Desktop app installed and logged in
-- [ ] Stable internet connection
-- [ ] Modern web browser (Chrome, Firefox, Safari, Edge)
-- [ ] Presentation setup (dual monitors recommended)
+- [ ] **Node.js v18+** installed from [nodejs.org](https://nodejs.org/)
+- [ ] **Claude Desktop** app installed and logged in
+- [ ] **Stable internet connection** for package downloads
+- [ ] **Modern web browser** (Chrome, Firefox, Safari, Edge)
+- [ ] **Presentation setup** (dual monitors recommended)
 
-**Port Availability Check:**
+**Node.js Verification:**
 ```bash
-# Verify ports 6080 and 8080 are available
-netstat -an | grep :6080
-netstat -an | grep :8080
+# Check Node.js version (must be 18 or higher)
+node --version
 
-# If ports are in use, you'll need to stop those services or use different ports
+# Check npm version
+npm --version
+
+# If versions are too old, download latest from nodejs.org
 ```
 
-### 2. Docker Image Pre-Download
+### 2. Playwright MCP Pre-Installation
 
-**Download Required Images (Do this in advance - can take 10+ minutes):**
+**Pre-install Playwright MCP (Recommended):**
 ```bash
-# Pre-pull the browser container image
-docker pull dorowu/ubuntu-desktop-lxde-vnc
+# Pre-install the Playwright MCP package
+npx -y @playwright/mcp --help
 
-# Verify image is downloaded
-docker images | grep ubuntu-desktop-lxde-vnc
+# Install Playwright browsers (this can take 5-10 minutes)
+npx playwright install
+
+# Verify Playwright installation
+npx playwright --version
+```
+
+**Test Playwright Functionality:**
+```bash
+# Quick test that Playwright can launch browsers
+npx playwright open google.com
+
+# This should open a browser window to Google
+# Close the window after verifying it works
 ```
 
 ### 3. Test Run - Complete Setup
 
-**Run Full Test Setup:**
-```bash
-# Start the container
-docker run -d \
-  --name mcp-browser-test \
-  -p 6080:6080 \
-  -p 8080:8080 \
-  -e VNC_PASSWORD=demo123 \
-  --memory=2g \
-  --cpus=2 \
-  dorowu/ubuntu-desktop-lxde-vnc
-
-# Wait 30-60 seconds for container to fully start
-sleep 60
-
-# Check container is running
-docker ps | grep mcp-browser-test
-```
-
-### 4. Browser Interface Test
-
-**Test NoVNC Access:**
-1. Open browser to: `http://localhost:6080/vnc.html`
-2. Enter password: `demo123`
-3. You should see Ubuntu desktop
-4. Open Firefox browser inside the desktop
-5. Navigate to a test website (e.g., google.com)
-6. Confirm browser works properly
-
-### 5. Claude Desktop Configuration
-
-**Create MCP Configuration:**
+**Configure Claude Desktop:**
 1. Open Claude Desktop
-2. Go to Settings → Developer/MCP Servers
-3. Add this configuration:
+2. Go to **Settings** → **Developer**
+3. Click **"Edit Config"** to open `claude_desktop_config.json`
+4. Add the Playwright configuration:
 
 ```json
 {
   "mcpServers": {
-    "browser": {
-      "command": "docker",
-      "args": ["exec", "-i", "mcp-browser-test", "mcp-server"],
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"]
+    }
+  }
+}
+```
+
+5. **Save the file** and **restart Claude Desktop**
+
+**Verify Connection:**
+```bash
+# Check if the MCP server starts successfully
+npx -y @playwright/mcp
+
+# Should show MCP server starting without errors
+# Press Ctrl+C to stop the test
+```
+
+### 4. Claude Desktop Integration Test
+
+**Test Claude Desktop MCP Connection:**
+1. Open Claude Desktop (after restart)
+2. Go to **Settings** → **Developer**
+3. Verify Playwright server shows as **"Connected"**
+4. Look for 🔨 (hammer) icon in the chat input area
+
+**Basic Functionality Test:**
+Send this test message to Claude:
+```
+"Can you navigate to example.com and tell me what the page title is?"
+```
+
+**Expected Results:**
+- Claude should recognize it has browser capabilities
+- Claude should successfully navigate to example.com
+- Claude should return information about the webpage
+
+### 5. Advanced Configuration Testing
+
+**Test Different Playwright Options:**
+Try these variations in your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"],
       "env": {
-        "DISPLAY": ":1"
+        "PLAYWRIGHT_TIMEOUT": "30000"
       }
     }
   }
 }
 ```
 
-4. Restart Claude Desktop
-5. Verify MCP server shows as "Connected" in settings
-
-### 6. End-to-End Test
-
-**Test Claude Browser Control:**
-
-Send this message to Claude:
+**Test Headed Mode (Optional for Demo):**
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp", "--headless=false"]
+    }
+  }
+}
 ```
-"Can you open a web browser and navigate to example.com, then tell me what you see?"
+
+**Note:** Headed mode will show browser windows during automation, which can be great for demos but may require display configuration.
+
+### 6. End-to-End Demo Test
+
+**Test Comprehensive Automation:**
+
+Send these progressive test messages to Claude:
+
+1. **Basic Navigation:**
+```
+"Navigate to wikipedia.org and tell me what you see"
+```
+
+2. **Search Functionality:**
+```
+"Search for 'Model Context Protocol' on Wikipedia and summarize the first paragraph"
+```
+
+3. **Multi-step Workflow:**
+```
+"Go to github.com, search for 'MCP servers', and tell me about the top repository"
 ```
 
 **Expected Results:**
-- Claude should acknowledge it can use browser tools
-- Browser in NoVNC should open and navigate to example.com
-- Claude should describe the webpage content
+- All commands should execute successfully
+- Claude should provide detailed information about each webpage
+- No error messages or timeouts
+- Smooth progression between different websites
 
 ### 7. Performance Optimization
 
 **For Smoother Demo Performance:**
-```bash
-# Stop test container and recreate with optimal settings
-docker stop mcp-browser-test
-docker rm mcp-browser-test
 
-# Run with performance optimizations
-docker run -d \
-  --name mcp-browser-demo \
-  -p 6080:6080 \
-  -p 8080:8080 \
-  -e VNC_PASSWORD=demo123 \
-  -e RESOLUTION=1280x720 \
-  -e DEPTH=16 \
-  --memory=3g \
-  --cpus=2 \
-  --shm-size=1g \
-  dorowu/ubuntu-desktop-lxde-vnc
+**Option 1: Optimize Playwright Settings**
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"],
+      "env": {
+        "PLAYWRIGHT_TIMEOUT": "15000",
+        "PLAYWRIGHT_BROWSER": "chromium"
+      }
+    }
+  }
+}
 ```
+
+**Option 2: Pre-warm Browser Instances**
+```bash
+# Pre-launch browsers to improve startup time
+npx playwright install chromium
+npx playwright install firefox
+npx playwright install webkit
+
+# Test browser launches
+npx playwright open --browser=chromium about:blank
+```
+
+**Resource Management:**
+- Close unnecessary applications during demo
+- Ensure stable internet connection
+- Have backup demo scenarios ready
 
 ### 8. Demo Content Preparation
 
 **Prepare Demo Scenarios:**
-- [ ] Test basic navigation (Wikipedia)
-- [ ] Test search functionality (Google)
+- [ ] Test basic navigation (Wikipedia, GitHub)
+- [ ] Test search functionality (Google, documentation sites)
 - [ ] Test form interactions
-- [ ] Test error handling (ask for non-existent elements)
-- [ ] Prepare backup scenarios if network is slow
+- [ ] Test screenshot capabilities
+- [ ] Test multi-step workflows
+- [ ] Prepare error handling examples
 
-**Bookmark Useful Test Sites:**
-- wikipedia.org (good for text content)
-- github.com (shows complex layouts)
-- google.com (tests search forms)
-- example.com (simple, loads fast)
+**Reliable Test Sites:**
+- **wikipedia.org** - Good for text content and search
+- **github.com** - Complex layouts and interactions
+- **example.com** - Fast loading, simple structure
+- **httpbin.org** - API testing and responses
+- **playwright.dev** - Technical documentation
+
+**Backup Demo Content:**
+- Prepare local HTML files if internet fails
+- Have screenshots of expected results
+- Create simple demo scripts for common scenarios
 
 ### 9. Presentation Setup
 
 **Screen Layout:**
 - [ ] Claude Desktop on primary screen
-- [ ] NoVNC browser window on secondary screen (or side-by-side)
-- [ ] Terminal window ready for troubleshooting commands
+- [ ] Browser window for showing Claude's work (if using headed mode)
+- [ ] Terminal window ready for troubleshooting
 - [ ] Workshop slides ready
 
-**Test Presentation Flow:**
-1. Show MCP server connection in Claude Desktop
+**Demo Flow Practice:**
+1. Show MCP server connection status in Claude Desktop
 2. Send test command to Claude
-3. Switch to browser view to show action
-4. Return to Claude to see response
-5. Practice smooth transitions between screens
+3. If using headed mode, point out browser windows opening
+4. Show Claude's response with extracted data
+5. Demonstrate different types of web interactions
+6. Practice smooth transitions between examples
+
+**Presentation Tips:**
+- Explain Playwright's advantages (speed, reliability, cross-browser)
+- Highlight headless vs headed mode differences  
+- Show the MCP configuration simplicity
+- Demonstrate error handling gracefully
 
 ### 10. Backup Plans
 
-**If Docker Issues Occur:**
-- Have alternative MCP server examples ready (file system, calculator)
-- Prepare screenshots of working demo
-- Have manual browser automation as backup explanation
+**If Playwright Issues Occur:**
+- Have alternative MCP servers ready (file system, calculator)
+- Prepare screenshots of successful Playwright automation
+- Demo the MCP configuration process itself
+- Use manual browser demonstration with explanation
 
 **If Network Issues Occur:**
-- Use offline websites or local HTML files
-- Focus on MCP concept explanation rather than live demo
+- Use local HTML files for demonstration
+- Focus on MCP concept explanation with local tools
 - Have video recording of working demo as backup
+- Demonstrate file system MCP server instead
+
+**Emergency Demo Script:**
+```bash
+# Quick file system MCP demo as backup
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/safe/directory"]
+    }
+  }
+}
+```
 
 ### 11. Workshop Day Checklist
 
 **30 Minutes Before Workshop:**
 ```bash
-# Start containers fresh
-docker stop mcp-browser-demo 2>/dev/null || true
-docker rm mcp-browser-demo 2>/dev/null || true
+# Verify Node.js and npm are working
+node --version
+npm --version
 
-docker run -d \
-  --name mcp-browser-demo \
-  -p 6080:6080 \
-  -p 8080:8080 \
-  -e VNC_PASSWORD=demo123 \
-  -e RESOLUTION=1280x720 \
-  --memory=3g \
-  --cpus=2 \
-  dorowu/ubuntu-desktop-lxde-vnv
+# Test Playwright MCP server manually
+npx -y @playwright/mcp --help
 
-# Wait for startup
-sleep 90
+# Pre-launch browsers for faster demo
+npx playwright install
 
-# Test browser access
-curl -s http://localhost:6080 > /dev/null && echo "NoVNC accessible" || echo "NoVNC failed"
+# Restart Claude Desktop fresh
+# (Close and reopen the application)
 ```
 
 **Quick Function Test:**
-- [ ] NoVNC loads at localhost:6080
-- [ ] Claude Desktop shows MCP server connected
-- [ ] Test command works: "Navigate to example.com"
-- [ ] Browser view shows the navigation happening
+- [ ] Claude Desktop opens without errors
+- [ ] MCP server shows "Connected" in Developer settings
+- [ ] 🔨 Hammer icon visible in chat input
+- [ ] Test command works: "Navigate to example.com and tell me the page title"
+- [ ] Claude responds with webpage information
 
 ### 12. Troubleshooting Quick Reference
 
@@ -203,35 +294,58 @@ curl -s http://localhost:6080 > /dev/null && echo "NoVNC accessible" || echo "No
 
 | Issue | Quick Fix |
 |-------|-----------|
-| NoVNC won't load | `docker restart mcp-browser-demo` |
-| Claude can't connect | Restart Claude Desktop |
-| Browser is slow | Reduce resolution: `RESOLUTION=1024x768` |
-| Port conflicts | Use different ports: `-p 6081:6080` |
-| Container won't start | Check Docker has enough memory allocated |
+| MCP server won't connect | Restart Claude Desktop |
+| "npx command not found" | Install Node.js from nodejs.org |
+| Browser launch failed | Run `npx playwright install` |
+| Permission errors | Fix npm permissions: `sudo chown -R $(whoami) ~/.npm` |
+| Slow performance | Close other applications, check internet |
+| Invalid JSON config | Validate JSON syntax in config file |
+
+**Quick Diagnostic Commands:**
+```bash
+# Check system readiness
+node --version                    # Should be 18+
+npx playwright --version          # Should show version
+npx -y @playwright/mcp --help     # Should show help text
+
+# Test browser installation
+npx playwright install --dry-run  # Shows what would be installed
+```
 
 ### 13. Clean Up After Testing
 
 ```bash
-# Stop and remove test containers
-docker stop mcp-browser-demo mcp-browser-test 2>/dev/null || true
-docker rm mcp-browser-demo mcp-browser-test 2>/dev/null || true
+# Playwright MCP cleans up automatically - no manual cleanup needed
 
-# Keep image for workshop day
-# docker rmi dorowu/ubuntu-desktop-lxde-vnc  # Only if you want to re-download
+# Optional: Remove downloaded browser binaries to save space
+npx playwright uninstall
+
+# If you want to clear npm cache
+npm cache clean --force
+
+# MCP server configuration stays in Claude Desktop for future use
 ```
 
 ## Final Pre-Workshop Verification
 
-- [ ] All components work together smoothly
-- [ ] Demo scenarios tested and timed
-- [ ] Backup plans prepared
-- [ ] Screen sharing/projection tested
-- [ ] Workshop slides integrated with demo timing
-- [ ] Troubleshooting commands bookmarked
+- [ ] Node.js 18+ installed and working
+- [ ] Playwright MCP server connects to Claude Desktop
+- [ ] Demo scenarios tested and timed  
+- [ ] Backup plans prepared and tested
+- [ ] Screen sharing/projection tested with both Claude Desktop and browser windows
+- [ ] Workshop slides integrated with live demo timing
+- [ ] Troubleshooting commands bookmarked and tested
 
 **Recommended Timeline:**
-- Complete setup: 2-3 days before workshop
-- Final test run: Day before workshop
-- Fresh container start: 30 minutes before workshop
+- **Initial setup:** 2-3 days before workshop  
+- **Full demo rehearsal:** 1 day before workshop
+- **Final verification:** 1 hour before workshop
+- **System restart:** 15 minutes before workshop
 
-Good luck with your MCP workshop! This preparation should ensure a smooth, impressive demonstration.
+**Day-of Success Indicators:**
+- ✅ MCP server shows "Connected" in Claude Desktop
+- ✅ 🔨 Hammer icon appears in chat input
+- ✅ Test navigation command works flawlessly
+- ✅ All demo scenarios execute within expected timeframes
+
+Good luck with your MCP + Playwright workshop! This preparation should ensure a smooth, impressive demonstration of AI-powered browser automation.
